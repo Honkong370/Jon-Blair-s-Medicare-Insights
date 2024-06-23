@@ -1,0 +1,54 @@
+# Jon-Blair-s-Medicare-Insights
+
+/*  What was the average length of stay in a Nursing Faciliy by state?  */
+
+SELECT state, ROUND(AVG(average_length_of_stays_days),2) AS avg_length 
+FROM `bigquery-public-data.cms_medicare.nursing_facilities_2014` 
+GROUP BY state ORDER BY avg_length DESC
+
+/*  How can we guage how much are older population are being charged by state?  */
+
+SELECT state, ROUND(AVG(total_snf_medicare_standard_payment_amount),2) AS medicare_payment 
+FROM `bigquery-public-data.cms_medicare.nursing_facilities_2014` 
+GROUP BY state ORDER BY medicare_payment DESC
+
+/*  By demographic, how many and much does each beneficiary benefit from the program?  */
+
+SELECT 
+state, distinct_beneficiaries_per_provider AS avg_beneficiary, 
+ROUND(AVG(male_beneficiaries)) AS avg_male_ben, 
+ROUND(AVG(female_beneficiaries)) AS avg_fem_ben, 
+ROUND(AVG(dual_beneficiaries)) AS avg_dual_ben, 
+ROUND(AVG(nondual_beneficiaries)) AS avg_nondual_ben, 
+ROUND(AVG(white_beneficiaries)) AS avg_white_ben, 
+ROUND(AVG(black_beneficiaries)) AS avg_black_ben, 
+ROUND(AVG(asian_pacific_islander_beneficiaries)) AS avg_asianpac_ben,
+ROUND(AVG(hispanic_beneficiaries)) AS avg_hispanic_ben, 
+ROUND(AVG(american_indian_or_alaska_native_beneficiaries)) AS avg_native_ben, 
+ROUND(AVG(other_unknown_beneficiaries)) AS avg_unknown_ben
+FROM `bigquery-public-data.cms_medicare.nursing_facilities_2014`  
+GROUP BY state, distinct_beneficiaries_per_provider 
+ORDER BY state   
+
+/*  What are the average claims for those that are over 65?  */
+
+SELECT state, city, 
+ROUND(AVG(total_snf_medicare_standard_payment_amount/ distinct_beneficiaries_per_provider),2) AS per_person 
+FROM `bigquery-public-data.cms_medicare.nursing_facilities_2014`  
+GROUP BY state, city ORDER BY state, per_person DESC  
+
+/*Visuals on the states and facilities categorize by HCC score and the relationship of risk and score */
+
+SELECT rs.state, rs.facility_name, rs.average_hcc_score, rs.total_snf_medicare_standard_payment_amount
+FROM(
+SELECT 
+state, facility_name,average_hcc_score, total_snf_medicare_standard_payment_amount, RANK() OVER(PARTITION BY state ORDER BY average_hcc_score DESC) RANK
+FROM `bigquery-public-data.cms_medicare.nursing_facilities_2014` ) rs WHERE RANK<=3
+
+/*What is the usage of our Medicare program?*/
+
+SELECT state, SUM(distinct_beneficiaries_per_provider) AS total_beneficiaries, 
+SUM(total_snf_medicare_allowed_amount) AS medicare_allowance, 
+ROUND(AVG(total_snf_medicare_payment_amount)/AVG(total_snf_medicare_allowed_amount)*100,2) AS percent_charged 
+FROM `bigquery-public-data.cms_medicare.nursing_facilities_2014`  
+GROUP BY state ORDER BY state, percent_charged DESC  
