@@ -1,0 +1,38 @@
+/*What is the average drug cost per specialty?*/
+
+SELECT specialty_description, ROUND(AVG(total_drug_cost),2) AS avg_drug_cost
+FROM `bigquery-public-data.cms_medicare.part_d_prescriber_2014` 
+GROUP BY specialty_description
+
+/*Medicare vs Medicaid claims and cost per claim difference visualized*/
+
+SELECT a.nppes_provider_state AS state_over65, 
+CAST(AVG(a.total_claim_count) AS INT64) AS avg_claim_count, 
+CAST(AVG(a.total_drug_cost) AS INT64) AS avg_cost,
+b.nppes_provider_state AS state_under65,
+CAST(AVG(b.total_claim_count) AS INT64) as avg_claim_count,
+CAST(AVG(b.total_drug_cost) AS INT64) as avg_cost
+
+FROM 
+
+(SELECT * 
+FROM `bigquery-public-data.cms_medicare.part_d_prescriber_2014`  
+WHERE bene_count_ge65 IS NOT NULL) a
+
+FULL OUTER JOIN (SELECT * FROM`bigquery-public-data.cms_medicare.part_d_prescriber_2014` b WHERE bene_count_ge65 IS NULL) b
+
+ON a.npi = b.npi AND a.nppes_provider_state = b.nppes_provider_state
+
+GROUP BY a.nppes_provider_state, b.nppes_provider_state
+
+
+/*What are the top drugs requested from a specialty */
+
+SELECT rs.specialty_description, rs.generic_name, rs.gen_count, rs.drug_costs
+FROM(
+SELECT specialty_description, 
+generic_name, 
+COUNT(generic_name) AS gen_count,
+CAST(SUM(total_drug_cost) AS INT64) AS drug_costs,
+RANK() OVER(PARTITION BY specialty_description ORDER BY COUNT(generic_name) DESC) RANK 
+FROM `bigquery-public-data.cms_medicare.part_d_prescriber_2014` GROUP BY specialty_description, generic_name HAVING gen_count > 10) rs WHERE RANK<=5 AND rs.gen_count>1
