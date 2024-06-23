@@ -1,0 +1,58 @@
+/*Inpatient vs Outpatient claims and cost comparison*/
+
+SELECT
+  OP.provider_state AS State,
+  OP.provider_city AS City,
+  OP.provider_id AS Provider_ID,
+  ROUND(OP.average_OP_cost) AS Average_OP_Cost,
+  ROUND(IP.average_IP_cost) AS Average_IP_Cost,
+  ROUND(OP.average_OP_cost + IP.average_IP_cost) AS Combined_Average_Cost
+FROM (
+  SELECT provider_state, provider_city, provider_id, SUM(average_total_payments*outpatient_services)/SUM(outpatient_services) AS average_OP_cost
+  FROM
+    `bigquery-public-data.cms_medicare.outpatient_charges_2014`
+  GROUP BY
+    provider_state,
+    provider_city,
+    provider_id ) AS OP
+INNER JOIN (
+  SELECT provider_state, provider_city, provider_id,
+    SUM(average_medicare_payments*total_discharges)/SUM(total_discharges) AS average_IP_cost
+  FROM `bigquery-public-data.cms_medicare.inpatient_charges_2014`
+  GROUP BY
+    provider_state,
+    provider_city,
+    provider_id ) AS IP
+ON
+  OP.provider_id = IP.provider_id
+  AND OP.provider_state = IP.provider_state
+  AND OP.provider_city = IP.provider_city
+ORDER BY
+  combined_average_cost DESC
+
+
+/*What are the top 5 reoccuring illnesses per specialty and state*/
+
+SELECT rs.provider_name,rs.provider_state, rs.drg_definition,rs.average_total_payments, 
+    FROM (
+        SELECT provider_name,provider_state, drg_definition , average_total_payments, Rank() 
+          over (Partition BY drg_definition
+                ORDER BY average_total_payments DESC) AS Rank
+        FROM `bigquery-public-data.cms_medicare.inpatient_charges_2011`
+        ) rs WHERE Rank <= 5
+
+/*Further drill down of cost of claims by region(zipcode)*/
+
+SELECT provider_zipcode, SUM(average_covered_charges) AS avg_covered_charges, 
+SUM(average_medicare_payments) AS avg_medicare_payments, 
+SUM(average_total_payments) AS average_total_payments 
+FROM `bigquery-public-data.cms_medicare.inpatient_charges_2015` GROUP BY provider_zipcode
+
+##This data was done by year but only 2011 displayed
+/*Top 25 providers and the average cost of their medicare claims*/ 
+
+SELECT provider_name, CAST(MAX(average_medicare_payments) AS INT64) AS avg_medicare_cost 
+FROM `bigquery-public-data.cms_medicare.inpatient_charges_2011` 
+GROUP BY provider_name, provider_state ORDER BY avg_medicare_cost DESC 
+LIMIT 25
+
