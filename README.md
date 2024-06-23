@@ -1,4 +1,6 @@
 # Jon-Blair-s-Medicare-Insights
+![Overview CMS](https://github.com/Honkong370/Jon-Blair-s-Medicare-Insights/assets/74484987/e480b780-1fcf-44fa-a66b-8f9ae50bbed5)
+
 This is an EDA on the Medicare/Medicaid programs. There are ingiths driven in places like providers' claims to drug cost. 
 
 #Nurse Facility
@@ -9,4 +11,4 @@ Part's data is about the drug expenses and their relations with state and specia
 
 Worksheets' data is a culmination of data I gathered for independent worksheets.
 
-![Overview CMS](https://github.com/Honkong370/Jon-Blair-s-Medicare-Insights/assets/74484987/e480b780-1fcf-44fa-a66b-8f9ae50bbed5)
+
